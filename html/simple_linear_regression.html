@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Simple Linear Regression</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MathJax for LaTeX Equation Rendering -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                typeset: false // We will manually trigger typesetting
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    <style>
+        canvas {
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+        }
+
+        .step-transition {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white p-6 shadow-md">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold">Simple Linear Regression Visualizer</h1>
+                <p class="text-indigo-200 text-sm mt-1">Statistical Modeling & Machine Learning Math</p>
+            </div>
+            <div class="hidden sm:flex space-x-2" id="step-indicators">
+                <!-- Indicators injected by JS -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col lg:flex-row gap-8">
+
+        <!-- Left Column: Visualization -->
+        <div
+            class="w-full lg:w-3/5 flex flex-col bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+            <div class="p-4 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
+                <h2 class="font-semibold text-slate-700" id="canvas-title">Data Plot</h2>
+                <span class="text-xs font-medium px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full">Interactive
+                    Canvas</span>
+            </div>
+            <div
+                class="p-4 relative flex justify-center items-center bg-white aspect-video lg:aspect-auto lg:h-[500px]">
+                <canvas id="regressionCanvas" class="max-w-full max-h-full"></canvas>
+            </div>
+        </div>
+
+        <!-- Right Column: Step Info & Controls -->
+        <div class="w-full lg:w-2/5 flex flex-col bg-white rounded-2xl shadow-lg border border-slate-100">
+
+            <div class="flex-grow p-6 overflow-y-auto" id="step-content">
+                <!-- Content injected by JS -->
+            </div>
+
+            <!-- Footer Controls -->
+            <div class="p-6 bg-slate-50 border-t border-slate-200 flex justify-between items-center rounded-b-2xl">
+                <button id="prev-btn"
+                    class="px-5 py-2.5 rounded-lg font-medium bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm">
+                    &larr; Previous
+                </button>
+                <span id="step-counter" class="text-sm font-semibold text-slate-500">Step 1 of 5</span>
+                <button id="next-btn"
+                    class="px-5 py-2.5 rounded-lg font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm">
+                    Next &rarr;
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="../js/simple_linear_regression.js"></script>
+</body>
+
+</html>
