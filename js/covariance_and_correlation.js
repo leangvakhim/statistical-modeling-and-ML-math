@@ -63,12 +63,12 @@ const steps = [
                 ctx.fillStyle = "#64748b";
                 ctx.font = "12px sans-serif";
                 ctx.textAlign = "center";
-                ctx.fillText(`Max: ${10 * multiplier}`, width - 20, height - 15);
+                ctx.fillText(`Max: ${10 * multiplier}`, width - 40, height - 15);
                 ctx.fillText(`Max: $${500 * multiplier}`, 40, 20);
 
                 ctx.fillStyle = "#1e293b";
                 ctx.font = "bold 16px sans-serif";
-                ctx.fillText(`Calculated Covariance: ${(42 * multiplier * multiplier).toLocaleString()}`, width / 2, 30);
+                ctx.fillText(`Calculated Covariance: ${(42 * multiplier * multiplier).toLocaleString()}`, width / 2, 40);
             };
             window.updateScale(1);
         }
