@@ -1,3 +1,4 @@
+// <!-- JavaScript integrated directly into the HTML -->
 // --- Data & State ---
 const steps = [
     {
@@ -16,21 +17,18 @@ const steps = [
         example: "<b>Positive:</b> Hours studied vs. Test score.<br><b>Negative:</b> Age of a car vs. Its resale value.<br><b>Zero:</b> The amount of rainfall vs. Number of typos in a book.",
         vizTitle: "Covariance Directions",
         setupViz: (ctx, width, height, controls) => {
-            // Create buttons to toggle views
             controls.innerHTML = `
-                <button class="px-3 py-1 bg-green-500/20 text-green-400 rounded hover:bg-green-500/30 transition" onclick="window.updateVizState(1)">Positive</button>
-                <button class="px-3 py-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition" onclick="window.updateVizState(-1)">Negative</button>
-                <button class="px-3 py-1 bg-slate-500/20 text-slate-300 rounded hover:bg-slate-500/30 transition" onclick="window.updateVizState(0)">Zero</button>
+                <button class="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition" onclick="window.updateVizState(1)">Positive</button>
+                <button class="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition" onclick="window.updateVizState(-1)">Negative</button>
+                <button class="px-3 py-1 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition" onclick="window.updateVizState(0)">Zero</button>
             `;
 
             window.updateVizState = (trend) => {
                 ctx.clearRect(0, 0, width, height);
                 const points = generatePoints(trend, trend === 0 ? 1 : 0.3, 60);
-                const color = trend > 0 ? "#22c55e" : (trend < 0 ? "#ef4444" : "#94a3b8");
-                const label = trend > 0 ? "Positive Trend" : (trend < 0 ? "Negative Trend" : "No Trend");
+                const color = trend > 0 ? "#22c55e" : (trend < 0 ? "#ef4444" : "#64748b");
                 drawScatter(ctx, width, height, points, "Variable X", "Variable Y", color);
 
-                // Draw trend line
                 if (trend !== 0) {
                     ctx.beginPath();
                     ctx.moveTo(width * 0.1, trend > 0 ? height * 0.9 : height * 0.1);
@@ -42,7 +40,7 @@ const steps = [
                     ctx.setLineDash([]);
                 }
             };
-            window.updateVizState(1); // Default to positive
+            window.updateVizState(1);
         }
     },
     {
@@ -52,29 +50,23 @@ const steps = [
         vizTitle: "Scale Sensitivity",
         setupViz: (ctx, width, height, controls) => {
             controls.innerHTML = `
-                <button class="px-3 py-1 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30 transition" onclick="window.updateScale(1)">Meters (Small Scale)</button>
-                <button class="px-3 py-1 bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30 transition" onclick="window.updateScale(100)">Centimeters (Large Scale)</button>
+                <button class="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition" onclick="window.updateScale(1)">Meters</button>
+                <button class="px-3 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition" onclick="window.updateScale(100)">Centimeters</button>
             `;
 
-            // Generate a fixed set of points so they look identical
             const basePoints = generatePoints(0.8, 0.2, 30);
 
             window.updateScale = (multiplier) => {
                 ctx.clearRect(0, 0, width, height);
-                // The visual representation remains EXACTLY the same!
                 drawScatter(ctx, width, height, basePoints, "Size", "Price", "#a855f7", false);
 
-                // But the numbers on the axes change
-                ctx.fillStyle = "#cbd5e1";
+                ctx.fillStyle = "#64748b";
                 ctx.font = "12px sans-serif";
                 ctx.textAlign = "center";
-
-                // Fake axis labels
                 ctx.fillText(`Max: ${10 * multiplier}`, width - 20, height - 15);
                 ctx.fillText(`Max: $${500 * multiplier}`, 40, 20);
 
-                // Show fake covariance
-                ctx.fillStyle = "white";
+                ctx.fillStyle = "#1e293b";
                 ctx.font = "bold 16px sans-serif";
                 ctx.fillText(`Calculated Covariance: ${(42 * multiplier * multiplier).toLocaleString()}`, width / 2, 30);
             };
@@ -82,14 +74,14 @@ const steps = [
         }
     },
     {
-        title: "4. Correlation: The Standardized Solution",
+        title: "4. Correlation: Standardized",
         desc: "<b>Correlation</b> (specifically Pearson's Correlation Coefficient, $r$) solves the scale problem. It takes the covariance and divides it by the standard deviations of X and Y.<br><br>This <i>standardizes</i> the metric, forcing the value to always fall strictly between <b>$-1$ and $1$</b>. Now, the number tells us both direction AND strength, regardless of units.",
-        example: "<ul><li><b>$r = 1.0$:</b> Perfect positive correlation (e.g., Temp in Celsius vs Temp in Fahrenheit).</li><li><b>$r = -0.8$:</b> Strong negative correlation (e.g., Elevation vs Air Pressure).</li><li><b>$r = 0.0$:</b> No linear correlation.</li></ul>",
+        example: "<ul><li><b>$r = 1.0$:</b> Perfect positive correlation.</li><li><b>$r = -0.8$:</b> Strong negative correlation.</li><li><b>$r = 0.0$:</b> No linear correlation.</li></ul>",
         vizTitle: "Correlation Coefficient (r)",
         setupViz: (ctx, width, height, controls) => {
             controls.innerHTML = `
                 <div class="flex flex-col items-center w-full px-4">
-                    <label class="text-slate-300 mb-2">Adjust Correlation (r): <span id="r-val" class="font-bold">0.90</span></label>
+                    <label class="text-slate-600 mb-2">Adjust Correlation (r): <span id="r-val" class="font-bold">0.90</span></label>
                     <input type="range" min="-1" max="1" step="0.1" value="0.9" class="w-full cursor-pointer accent-blue-500" oninput="window.updateCorrelation(this.value)">
                 </div>
             `;
@@ -98,19 +90,14 @@ const steps = [
                 document.getElementById('r-val').innerText = parseFloat(r).toFixed(2);
                 ctx.clearRect(0, 0, width, height);
 
-                // Convert r to a variance for our generator roughly
                 const numericR = parseFloat(r);
-                const trend = numericR > 0 ? 1 : (numericR < 0 ? -1 : 0);
-                // As r gets closer to 0, variance (spread) goes up. r=1 -> var=0.
                 const variance = Math.max(0.05, 1 - Math.abs(numericR));
-
                 const points = generatePoints(numericR, variance, 80);
 
-                // Color based on strength
-                let color = "#3b82f6"; // blue
-                if (numericR < -0.5) color = "#ef4444"; // red
-                if (Math.abs(numericR) <= 0.5) color = "#94a3b8"; // grey
-                if (numericR > 0.5) color = "#22c55e"; // green
+                let color = "#3b82f6";
+                if (numericR < -0.5) color = "#ef4444";
+                if (Math.abs(numericR) <= 0.5) color = "#64748b";
+                if (numericR > 0.5) color = "#22c55e";
 
                 drawScatter(ctx, width, height, points, "X", "Y", color);
             };
@@ -118,12 +105,11 @@ const steps = [
         }
     },
     {
-        title: "5. Recap & The Mathematical Formulas",
-        desc: "Let's bring it all together. Covariance measures direction, and Correlation standardizes it to measure both direction and strength.<br><br>Here are the fundamental formulas used in statistical modeling to calculate these properties across a dataset of size $N$ (or sample size $n$).",
-        example: "In Machine Learning, these formulas are heavily used in feature selection (e.g., finding highly correlated features to drop to prevent multicollinearity) and algorithms like Principal Component Analysis (PCA) which relies on the Covariance Matrix.",
+        title: "5. Recap & Formulas",
+        desc: "Let's bring it all together. Covariance measures direction, and Correlation standardizes it to measure both direction and strength.<br><br>Here are the fundamental formulas used in statistical modeling to calculate these properties across a dataset.",
+        example: "In Machine Learning, these formulas are heavily used in feature selection and algorithms like Principal Component Analysis (PCA) which relies on the Covariance Matrix.",
         vizTitle: "The Equations",
         setupViz: (ctx, width, height, controls) => {
-            // Hide canvas, show math overlay
             ctx.clearRect(0, 0, width, height);
             controls.innerHTML = "";
 
@@ -132,25 +118,24 @@ const steps = [
 
             mathOverlay.innerHTML = `
                 <div class="w-full text-sm">
-                    <h3 class="text-blue-400 font-bold mb-2 border-b border-slate-700 pb-1">1. Covariance (Population)</h3>
+                    <h3 class="text-blue-600 font-bold mb-2 border-b border-slate-200 pb-1">1. Covariance (Population)</h3>
                     <div class="mb-4 overflow-x-auto overflow-y-hidden py-2">
                         $$\\sigma_{xy} = \\frac{1}{N} \\sum_{i=1}^{N} (x_i - \\mu_x)(y_i - \\mu_y)$$
                     </div>
 
-                    <h3 class="text-blue-400 font-bold mb-2 border-b border-slate-700 pb-1">2. Covariance (Sample)</h3>
+                    <h3 class="text-blue-600 font-bold mb-2 border-b border-slate-200 pb-1">2. Covariance (Sample)</h3>
                     <div class="mb-4 overflow-x-auto overflow-y-hidden py-2">
                         $$s_{xy} = \\frac{1}{n-1} \\sum_{i=1}^{n} (x_i - \\bar{x})(y_i - \\bar{y})$$
                     </div>
 
-                    <h3 class="text-blue-400 font-bold mb-2 border-b border-slate-700 pb-1">3. Pearson Correlation ($r$)</h3>
-                    <p class="text-slate-400 text-xs mb-1">Covariance divided by product of standard deviations.</p>
+                    <h3 class="text-blue-600 font-bold mb-2 border-b border-slate-200 pb-1">3. Pearson Correlation ($r$)</h3>
+                    <p class="text-slate-500 text-xs mb-1">Covariance divided by product of standard deviations.</p>
                     <div class="overflow-x-auto overflow-y-hidden py-2">
                         $$r = \\frac{s_{xy}}{s_x s_y} = \\frac{\\sum (x_i - \\bar{x})(y_i - \\bar{y})}{\\sqrt{\\sum (x_i - \\bar{x})^2 \\sum (y_i - \\bar{y})^2}}$$
                     </div>
                 </div>
             `;
 
-            // Trigger MathJax render
             if (window.MathJax && window.MathJax.typesetPromise) {
                 window.MathJax.typesetPromise([mathOverlay]).catch((err) => console.log('MathJax error:', err));
             }
@@ -178,31 +163,24 @@ const domMathOverlay = document.getElementById('math-overlay');
 
 // --- Canvas Helpers ---
 function resizeCanvas() {
-    // Match internal resolution to display size for crispness
     canvas.width = canvas.clientWidth * window.devicePixelRatio;
     canvas.height = canvas.clientHeight * window.devicePixelRatio;
-    renderStep(currentStep, true); // re-render without animation
+    renderStep(currentStep, true);
 }
 window.addEventListener('resize', resizeCanvas);
 
 function generatePoints(trend, variance, count) {
     const points = [];
     for (let i = 0; i < count; i++) {
-        // x is randomly distributed between 0.1 and 0.9
         let x = 0.1 + Math.random() * 0.8;
         let y;
 
         if (trend === 0) {
             y = 0.1 + Math.random() * 0.8;
         } else {
-            // base linear relationship
             let baseLine = trend > 0 ? x : (1 - x);
-
-            // Add noise based on variance
             let noise = (Math.random() - 0.5) * variance * 2;
             y = baseLine + noise;
-
-            // clamp
             y = Math.max(0.1, Math.min(0.9, y));
         }
         points.push({ x, y });
@@ -216,17 +194,15 @@ function drawScatter(ctx, width, height, points, xLabel, yLabel, color, drawAxes
     const plotH = height - padding * 2;
 
     if (drawAxes) {
-        // Draw Axes
         ctx.beginPath();
         ctx.moveTo(padding, padding);
         ctx.lineTo(padding, height - padding);
         ctx.lineTo(width - padding, height - padding);
-        ctx.strokeStyle = '#475569';
+        ctx.strokeStyle = '#cbd5e1';
         ctx.lineWidth = 2 * window.devicePixelRatio;
         ctx.stroke();
 
-        // Labels
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = '#64748b';
         ctx.font = `${12 * window.devicePixelRatio}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.fillText(xLabel, width / 2, height - padding / 3);
@@ -238,12 +214,10 @@ function drawScatter(ctx, width, height, points, xLabel, yLabel, color, drawAxes
         ctx.restore();
     }
 
-    // Draw Points
     ctx.fillStyle = color;
     points.forEach(p => {
         const px = padding + p.x * plotW;
         const py = (height - padding) - p.y * plotH;
-
         ctx.beginPath();
         ctx.arc(px, py, 4 * window.devicePixelRatio, 0, Math.PI * 2);
         ctx.fill();
@@ -252,7 +226,6 @@ function drawScatter(ctx, width, height, points, xLabel, yLabel, color, drawAxes
 
 // --- Core Logic ---
 function init() {
-    // Setup dots
     for (let i = 0; i < steps.length; i++) {
         const dot = document.createElement('div');
         dot.className = `w-2.5 h-2.5 rounded-full transition-colors ${i === 0 ? 'bg-blue-500' : 'bg-slate-200'}`;
@@ -260,11 +233,9 @@ function init() {
         domProgressDots.appendChild(dot);
     }
 
-    // Canvas sizes
     canvas.width = canvas.clientWidth * window.devicePixelRatio;
     canvas.height = canvas.clientHeight * window.devicePixelRatio;
 
-    // Load initial mathjax safely
     if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
         window.MathJax.startup.promise.then(() => {
             renderStep(0);
@@ -272,11 +243,9 @@ function init() {
             renderStep(0);
         });
     } else {
-        // Fallback if Mathjax takes long or promise is undefined
         setTimeout(() => renderStep(0), 100);
     }
 
-    // Listeners
     btnNext.addEventListener('click', () => {
         if (currentStep < steps.length - 1) {
             currentStep++;
@@ -293,13 +262,9 @@ function init() {
 }
 
 function triggerTransition() {
-    // Animation out
     contentArea.classList.remove('fade-enter-active');
-
-    // tiny delay to allow class switch
     setTimeout(() => {
         renderStep(currentStep);
-        // Animation in
         contentArea.classList.add('fade-enter');
         requestAnimationFrame(() => {
             contentArea.classList.add('fade-enter-active');
@@ -310,7 +275,6 @@ function triggerTransition() {
 function renderStep(index, isResize = false) {
     const step = steps[index];
 
-    // Update text UI if not just resizing
     if (!isResize) {
         domTitle.innerHTML = step.title;
         domDesc.innerHTML = step.desc;
@@ -318,7 +282,6 @@ function renderStep(index, isResize = false) {
         domStepNum.innerText = index + 1;
         domVizTitle.innerText = step.vizTitle;
 
-        // Update Dots
         for (let i = 0; i < steps.length; i++) {
             const dot = document.getElementById(`dot-${i}`);
             if (i === index) {
@@ -330,7 +293,6 @@ function renderStep(index, isResize = false) {
             }
         }
 
-        // Update buttons
         btnPrev.disabled = index === 0;
         if (index === steps.length - 1) {
             btnNext.disabled = true;
@@ -340,21 +302,17 @@ function renderStep(index, isResize = false) {
             btnNext.innerHTML = "Next Step &rarr;";
         }
 
-        // Process math in the text descriptions
         if (window.MathJax && window.MathJax.typesetPromise) {
             window.MathJax.typesetPromise([domDesc, domExample]).catch((err) => console.log(err));
         }
     }
 
-    // Reset Canvas & Overlay
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (index !== steps.length - 1) {
         domMathOverlay.classList.add('hidden');
     }
 
-    // Run step-specific visualization logic
     step.setupViz(ctx, canvas.width, canvas.height, domVizControls);
 }
 
-// Run
 window.addEventListener('DOMContentLoaded', init);
