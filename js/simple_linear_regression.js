@@ -1,5 +1,4 @@
 // --- Data & Math Setup ---
-// Real-world example: X = Temperature (°C), Y = Ice Cream Sales ($)
 const rawData = [
     { x: 12, y: 180 },
     { x: 14, y: 210 },
@@ -25,7 +24,7 @@ rawData.forEach(p => {
 const meanX = sumX / n;
 const meanY = sumY / n;
 
-// Beta 1 (Slope)
+// OLS Beta 1 (Slope)
 let numerator = 0;
 let denominator = 0;
 rawData.forEach(p => {
@@ -34,11 +33,16 @@ rawData.forEach(p => {
 });
 const beta1 = numerator / denominator;
 
-// Beta 0 (Intercept)
+// OLS Beta 0 (Intercept)
 const beta0 = meanY - beta1 * meanX;
 
-// Prediction function
+// Prediction functions
 const predictY = (x) => beta0 + beta1 * x;
+
+// Custom Prediction for Step 2 Interactions
+let customBeta0 = 0;
+let customBeta1 = 15;
+const predictCustomY = (x) => customBeta0 + customBeta1 * x;
 
 // --- Step Definitions ---
 const steps = [
@@ -57,23 +61,74 @@ const steps = [
     },
     {
         title: "2. The Goal: Line of Best Fit",
-        canvasTitle: "Drawing the Regression Line",
+        canvasTitle: "Interactive: Draw Your Own Line",
         content: `
             <h3 class="text-xl font-bold text-slate-800 mb-4">Finding the Trend</h3>
-            <p class="mb-4 text-slate-600 leading-relaxed">To make predictions, we want to draw a straight line straight through the "middle" of our data points. This is called the <strong>Line of Best Fit</strong> or the <strong>Regression Line</strong>.</p>
-            <div class="bg-slate-100 p-4 rounded-lg mb-4 border border-slate-200">
-                <p class="text-sm font-semibold text-slate-700 mb-2">The equation of a straight line is:</p>
+            <p class="mb-4 text-slate-600 leading-relaxed">To make predictions, we want to draw a straight line straight through the "middle" of our data points. The general equation of a straight line is:</p>
+            <div class="bg-slate-100 p-3 rounded-lg mb-4 border border-slate-200">
                 <div class="text-center text-lg overflow-x-auto overflow-y-hidden">
-                    $$ \\hat{y} = \\beta_0 + \\beta_1x $$
+                    $$\\hat{y} = \\beta_0 + \\beta_1x$$
                 </div>
             </div>
-            <p class="text-slate-600 leading-relaxed mb-2">Where:</p>
-            <ul class="list-disc pl-5 text-slate-600 space-y-1 mb-4">
-                <li><strong>$\\hat{y}$ (y-hat):</strong> The predicted sales.</li>
-                <li><strong>$\\beta_0$:</strong> The y-intercept (sales when temp is 0°C).</li>
-                <li><strong>$\\beta_1$:</strong> The slope (how much sales increase per 1°C).</li>
-            </ul>
-        `
+            <p class="text-slate-700 font-semibold mb-2">Try adjusting the line manually!</p>
+            <p class="text-sm text-slate-600 mb-4">Use the sliders to tweak the Intercept ($\\beta_0$) and Slope ($\\beta_1$) to find what you think is the best fit before we calculate the optimal one.</p>
+
+            <!-- Dynamic Equation Display -->
+            <div class="text-center text-lg font-mono text-indigo-700 bg-indigo-50 p-2 rounded mb-6 border border-indigo-100 shadow-inner">
+                ŷ = <span id="eq-b0" class="font-bold">0</span> + <span id="eq-b1" class="font-bold">15.0</span>x
+            </div>
+
+            <!-- Interactive Sliders -->
+            <div class="space-y-5">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="slider-b0" class="text-sm font-semibold text-slate-700">Intercept ($\\beta_0$)</label>
+                        <span id="val-b0" class="text-sm font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded">0</span>
+                    </div>
+                    <input type="range" id="slider-b0" min="-150" max="150" step="1" value="0" class="w-full accent-indigo-600 cursor-pointer h-2">
+                    <p class="text-xs text-slate-500 mt-1">Starting point (sales when 0°C)</p>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="slider-b1" class="text-sm font-semibold text-slate-700">Slope ($\\beta_1$)</label>
+                        <span id="val-b1" class="text-sm font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded">15.0</span>
+                    </div>
+                    <input type="range" id="slider-b1" min="0" max="30" step="0.5" value="15" class="w-full accent-indigo-600 cursor-pointer h-2">
+                    <p class="text-xs text-slate-500 mt-1">Steepness (sales increase per 1°C)</p>
+                </div>
+            </div>
+        `,
+        onRender: () => {
+            const sliderB0 = document.getElementById('slider-b0');
+            const sliderB1 = document.getElementById('slider-b1');
+            const valB0 = document.getElementById('val-b0');
+            const valB1 = document.getElementById('val-b1');
+            const eqB0 = document.getElementById('eq-b0');
+            const eqB1 = document.getElementById('eq-b1');
+
+            // Set initial values
+            sliderB0.value = customBeta0;
+            sliderB1.value = customBeta1;
+            valB0.innerText = customBeta0;
+            valB1.innerText = customBeta1.toFixed(1);
+            eqB0.innerText = customBeta0;
+            eqB1.innerText = customBeta1.toFixed(1);
+
+            // Setup Event Listeners
+            sliderB0.addEventListener('input', (e) => {
+                customBeta0 = parseFloat(e.target.value);
+                valB0.innerText = customBeta0;
+                eqB0.innerText = customBeta0;
+                renderCanvas(); // Redraw instantly
+            });
+
+            sliderB1.addEventListener('input', (e) => {
+                customBeta1 = parseFloat(e.target.value);
+                valB1.innerText = customBeta1.toFixed(1);
+                eqB1.innerText = customBeta1.toFixed(1);
+                renderCanvas(); // Redraw instantly
+            });
+        }
     },
     {
         title: "3. Measuring Error (Residuals)",
@@ -81,13 +136,13 @@ const steps = [
         content: `
             <h3 class="text-xl font-bold text-slate-800 mb-4">Nobody is Perfect</h3>
             <p class="mb-4 text-slate-600 leading-relaxed">Notice that our straight line doesn't perfectly touch every single dot. The real world has variance!</p>
-            <p class="mb-4 text-slate-600 leading-relaxed">The vertical distance between an actual data point ($y$) and our predicted line ($\\hat{y}$) is called the <strong>Residual</strong> or <strong>Error</strong>.</p>
+            <p class="mb-4 text-slate-600 leading-relaxed">The vertical distance between an actual data point ($y$) and our predicted optimal line ($\\hat{y}$) is called the <strong>Residual</strong> or <strong>Error</strong>.</p>
             <div class="bg-red-50 p-4 rounded-lg border border-red-100 mb-4">
                 <div class="text-center text-lg">
-                    $$ \\text{Error}_i = y_i - \\hat{y}_i $$
+                    $$\\text{Error}_i = y_i - \\hat{y}_i$$
                 </div>
             </div>
-            <p class="text-slate-600 leading-relaxed">Look at the graph. The red dashed lines represent these errors. To find the "best" line, we need to minimize these errors as much as possible.</p>
+            <p class="text-slate-600 leading-relaxed">Look at the graph. The red dashed lines represent these errors based on the mathematically optimal line. To find this "best" line, we needed to minimize these errors as much as possible.</p>
         `
     },
     {
@@ -109,25 +164,25 @@ const steps = [
         canvasTitle: "The Final Mathematical Model",
         content: `
             <h3 class="text-xl font-bold text-slate-800 mb-4">The Mathematical Engine</h3>
-            <p class="mb-4 text-slate-600 leading-relaxed">Behind the scenes, the machine learning model calculates the absolute optimal line using these specific formulas:</p>
+            <p class="mb-4 text-slate-600 leading-relaxed">Behind the scenes, the machine learning model calculated the absolute optimal line using these specific formulas:</p>
 
             <div class="space-y-4">
                 <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
                     <p class="text-sm font-bold text-slate-700 mb-1">1. The Estimated Slope ($\\beta_1$)</p>
                     <p class="text-xs text-slate-500 mb-2">Calculates the steepness based on variance & covariance.</p>
-                    <div class="overflow-x-auto overflow-y-hidden">$$ \\beta_1 = \\frac{\\sum_{i=1}^{n} (x_i - \\bar{x})(y_i - \\bar{y})}{\\sum_{i=1}^{n} (x_i - \\bar{x})^2} $$</div>
+                    <div class="overflow-x-auto overflow-y-hidden">$$\\beta_1 = \\frac{\\sum_{i=1}^{n} (x_i - \\bar{x})(y_i - \\bar{y})}{\\sum_{i=1}^{n} (x_i - \\bar{x})^2}$$</div>
                 </div>
 
                 <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
                     <p class="text-sm font-bold text-slate-700 mb-1">2. The Estimated Intercept ($\\beta_0$)</p>
                     <p class="text-xs text-slate-500 mb-2">Ensures the line passes through the mean of X and Y.</p>
-                    <div class="overflow-x-auto overflow-y-hidden">$$ \\beta_0 = \\bar{y} - \\beta_1\\bar{x} $$</div>
+                    <div class="overflow-x-auto overflow-y-hidden">$$\\beta_0 = \\bar{y} - \\beta_1\\bar{x}$$</div>
                 </div>
 
-                <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
-                    <p class="text-sm font-bold text-indigo-900 mb-1">Final Model for our Ice Cream Shop:</p>
-                    <div class="overflow-x-auto overflow-y-hidden text-indigo-900 font-medium">$$ \\text{Sales} = ${beta0.toFixed(2)} + ${beta1.toFixed(2)}(\\text{Temp}) $$</div>
-                    <p class="text-xs text-indigo-700 mt-2">If tomorrow is 30°C, we predict $${(beta0 + beta1 * 30).toFixed(2)} in sales!</p>
+                <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+                    <p class="text-sm font-bold text-emerald-900 mb-1">Final Optimal Model for our Ice Cream Shop:</p>
+                    <div class="overflow-x-auto overflow-y-hidden text-emerald-900 font-medium">$$\\text{Sales} = ${beta0.toFixed(2)} + ${beta1.toFixed(2)}(\\text{Temp})$$</div>
+                    <p class="text-xs text-emerald-700 mt-2">If tomorrow is 30°C, we predict $${(beta0 + beta1 * 30).toFixed(2)} in sales!</p>
                 </div>
             </div>
         `
@@ -147,7 +202,6 @@ const canvasTitle = document.getElementById('canvas-title');
 const stepIndicatorsContainer = document.getElementById('step-indicators');
 
 // --- Canvas Setup ---
-// Setup internal resolution for crisp lines
 canvas.width = 800;
 canvas.height = 600;
 
@@ -168,7 +222,7 @@ function mapY(y) {
 
 function drawAxes() {
     ctx.beginPath();
-    ctx.strokeStyle = "#94a3b8"; // slate-400
+    ctx.strokeStyle = "#94a3b8";
     ctx.lineWidth = 2;
 
     // Y Axis
@@ -181,7 +235,7 @@ function drawAxes() {
     ctx.stroke();
 
     // Labels
-    ctx.fillStyle = "#475569"; // slate-600
+    ctx.fillStyle = "#475569";
     ctx.font = "bold 16px sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("Temperature (°C) →", canvas.width / 2, canvas.height - 20);
@@ -222,9 +276,9 @@ function drawPoints() {
     rawData.forEach(p => {
         ctx.beginPath();
         ctx.arc(mapX(p.x), mapY(p.y), 6, 0, Math.PI * 2);
-        ctx.fillStyle = "#3b82f6"; // blue-500
+        ctx.fillStyle = "#3b82f6";
         ctx.fill();
-        ctx.strokeStyle = "#1d4ed8"; // blue-700
+        ctx.strokeStyle = "#1d4ed8";
         ctx.lineWidth = 2;
         ctx.stroke();
     });
@@ -232,14 +286,25 @@ function drawPoints() {
 
 function drawLine() {
     ctx.beginPath();
-    ctx.strokeStyle = "#10b981"; // emerald-500
+
+    // Differentiate Custom Interactive Line vs OLS Optimal Line
+    if (currentStep === 1) {
+        ctx.strokeStyle = "#4f46e5"; // indigo-600 for custom line
+    } else {
+        ctx.strokeStyle = "#10b981"; // emerald-500 for optimal line
+    }
+
     ctx.lineWidth = 4;
-    // Draw line across the visible area
+
     const startX = Math.max(0, xMin);
     const endX = xMax;
 
-    ctx.moveTo(mapX(startX), mapY(predictY(startX)));
-    ctx.lineTo(mapX(endX), mapY(predictY(endX)));
+    // Use corresponding math depending on step
+    const yStart = currentStep === 1 ? predictCustomY(startX) : predictY(startX);
+    const yEnd = currentStep === 1 ? predictCustomY(endX) : predictY(endX);
+
+    ctx.moveTo(mapX(startX), mapY(yStart));
+    ctx.lineTo(mapX(endX), mapY(yEnd));
     ctx.stroke();
 }
 
@@ -249,12 +314,12 @@ function drawResiduals() {
     rawData.forEach(p => {
         const predY = predictY(p.x);
         ctx.beginPath();
-        ctx.strokeStyle = "#ef4444"; // red-500
+        ctx.strokeStyle = "#ef4444";
         ctx.moveTo(mapX(p.x), mapY(p.y));
         ctx.lineTo(mapX(p.x), mapY(predY));
         ctx.stroke();
     });
-    ctx.setLineDash([]); // Reset
+    ctx.setLineDash([]);
 }
 
 function drawSquares() {
@@ -264,21 +329,16 @@ function drawSquares() {
         const pixelY = mapY(p.y);
         const pixelPredY = mapY(predY);
 
-        // Difference in pixels (side of the square)
         const sidePixels = Math.abs(pixelY - pixelPredY);
 
-        ctx.fillStyle = "rgba(239, 68, 68, 0.2)"; // red-500 with opacity
+        ctx.fillStyle = "rgba(239, 68, 68, 0.2)";
         ctx.strokeStyle = "rgba(239, 68, 68, 0.8)";
         ctx.lineWidth = 1;
 
-        // Determine direction to draw square so it doesn't cover everything
-        // Draw to the right
         ctx.beginPath();
         if (p.y > predY) {
-            // Actual above line (pixels lower)
             ctx.rect(pixelX, pixelY, sidePixels, sidePixels);
         } else {
-            // Actual below line
             ctx.rect(pixelX, pixelY - sidePixels, sidePixels, sidePixels);
         }
 
@@ -290,24 +350,28 @@ function drawSquares() {
 function drawCentroid() {
     ctx.beginPath();
     ctx.arc(mapX(meanX), mapY(meanY), 8, 0, Math.PI * 2);
-    ctx.fillStyle = "#f59e0b"; // amber-500
+    ctx.fillStyle = "#f59e0b";
     ctx.fill();
     ctx.strokeStyle = "#b45309";
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Label
     ctx.fillStyle = "#b45309";
     ctx.font = "bold 14px sans-serif";
     ctx.textAlign = "left";
-    ctx.fillText(`(X̄, Ȳ)`, mapX(meanX) + 12, mapY(meanY) - 10);
+    ctx.fillText(`(X̄, Ȳ)`, mapX(meanX) + 12, mapY(meanY) - 10);
 }
 
 function renderCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawAxes();
 
-    // Render logically based on step
+    // Set clip region so lines don't draw over the axes and paddings when wildly adjusted
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(mapX(xMin), mapY(yMax), mapX(xMax) - mapX(xMin), mapY(yMin) - mapY(yMax));
+    ctx.clip();
+
     if (currentStep >= 0) {
         drawPoints();
     }
@@ -319,15 +383,17 @@ function renderCanvas() {
     }
     if (currentStep === 3) {
         drawSquares();
-        drawResiduals(); // redraw on top
-        drawPoints(); // redraw on top
-        drawLine(); // redraw on top
+        drawResiduals();
+        drawPoints();
+        drawLine();
     }
     if (currentStep === 4) {
         drawCentroid();
         drawPoints();
         drawLine();
     }
+
+    ctx.restore(); // Restore context (removes clip)
 }
 
 // --- UI Logic ---
@@ -341,7 +407,6 @@ function generateIndicators() {
 }
 
 function updateUI() {
-    // Update buttons
     prevBtn.disabled = currentStep === 0;
     nextBtn.disabled = currentStep === steps.length - 1;
 
@@ -351,24 +416,29 @@ function updateUI() {
         nextBtn.classList.replace('hover:bg-indigo-700', 'hover:bg-emerald-700');
     } else {
         nextBtn.innerHTML = "Next &rarr;";
-        nextBtn.classList.replace('bg-emerald-600', 'bg-indigo-600');
-        nextBtn.classList.replace('hover:bg-emerald-700', 'hover:bg-indigo-700');
+        if (nextBtn.classList.contains('bg-emerald-600')) {
+            nextBtn.classList.replace('bg-emerald-600', 'bg-indigo-600');
+            nextBtn.classList.replace('hover:bg-emerald-700', 'hover:bg-indigo-700');
+        }
     }
 
     counterSpan.textContent = `Step ${currentStep + 1} of ${steps.length}`;
     canvasTitle.textContent = steps[currentStep].canvasTitle;
 
-    // Fade out, change content, fade in
     contentDiv.style.opacity = 0;
     setTimeout(() => {
         contentDiv.innerHTML = steps[currentStep].content;
         contentDiv.style.opacity = 1;
 
-        // Trigger MathJax to process the newly injected HTML
+        // Run step specific logic (like injecting slider event listeners)
+        if (steps[currentStep].onRender) {
+            steps[currentStep].onRender();
+        }
+
         if (window.MathJax && window.MathJax.typesetPromise) {
             MathJax.typesetPromise([contentDiv]).catch((err) => console.log(err.message));
         }
-    }, 150); // small delay for visual transition effect
+    }, 150);
 
     generateIndicators();
     renderCanvas();
@@ -391,22 +461,12 @@ nextBtn.addEventListener('click', () => {
 
 // Initialize Application
 window.addEventListener('load', () => {
-    // Ensure content div has transition
     contentDiv.classList.add('step-transition');
-
-    // Initial render
     updateUI();
 
-    // Initial MathJax run (if loaded)
-    if (window.MathJax && window.MathJax.typesetPromise) {
-        MathJax.typesetPromise();
-    } else {
-        // If MathJax loads after our script, the startup config handles it,
-        // but we might need a timeout fallback just in case CDN is slow.
-        setTimeout(() => {
-            if (window.MathJax && window.MathJax.typesetPromise) {
-                MathJax.typesetPromise([contentDiv]);
-            }
-        }, 1000);
-    }
+    setTimeout(() => {
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            MathJax.typesetPromise([contentDiv]);
+        }
+    }, 500);
 });
