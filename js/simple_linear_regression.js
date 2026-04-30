@@ -238,12 +238,12 @@ function drawAxes() {
     ctx.fillStyle = "#475569";
     ctx.font = "bold 16px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("Temperature (°C) →", canvas.width / 2, canvas.height - 20);
+    ctx.fillText("Temperature (°C)", canvas.width / 2, canvas.height - 20);
 
     ctx.save();
     ctx.translate(25, canvas.height / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.fillText("← Ice Cream Sales ($)", 0, 0);
+    ctx.fillText("Ice Cream Sales ($)", 0, 0);
     ctx.restore();
 
     // Ticks X
