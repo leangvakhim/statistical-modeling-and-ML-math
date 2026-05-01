@@ -36,13 +36,95 @@ const beta1 = numerator / denominator;
 // OLS Beta 0 (Intercept)
 const beta0 = meanY - beta1 * meanX;
 
+// SSE (Sum of Squared Errors) Helper
+const calculateSSE = (b0, b1) => {
+    return rawData.reduce((sum, p) => sum + Math.pow(p.y - (b0 + b1 * p.x), 2), 0);
+};
+
 // Prediction functions
 const predictY = (x) => beta0 + beta1 * x;
 
-// Custom Prediction for Step 2 Interactions
+// Custom Prediction for Step 2 and Step 4 Interactions
 let customBeta0 = 0;
 let customBeta1 = 15;
 const predictCustomY = (x) => customBeta0 + customBeta1 * x;
+
+// Function that returns the correct prediction based on the current step
+const predictActiveY = (x) => {
+    // Steps 2 (index 1) and 4 (index 3) use the interactive custom line
+    if (currentStep === 1 || currentStep === 3) {
+        return predictCustomY(x);
+    }
+    return predictY(x);
+};
+
+// Function to draw the U-Shape curve on the mini-canvas in Step 4
+function drawLossCurve(ctx, w, h, currentB1) {
+    ctx.clearRect(0, 0, w, h);
+
+    // Centering the range around the optimal slope (~18.45)
+    // creates a perfectly symmetrical U-shape!
+    const minB1 = 8;
+    const maxB1 = 29;
+
+    // Generate Data to find scales
+    let minSSE = Infinity;
+    let maxSSE = -Infinity;
+    const sseData = [];
+    // Finer step size (0.1 instead of 0.5) makes the curve perfectly smooth
+    for (let b = minB1; b <= maxB1; b += 0.1) {
+        const s = calculateSSE(beta0, b);
+        sseData.push({ b, s });
+        if (s < minSSE) minSSE = s;
+        if (s > maxSSE) maxSSE = s;
+    }
+
+    const padding = 15;
+    const mapX = (b) => padding + ((b - minB1) / (maxB1 - minB1)) * (w - padding * 2);
+    const mapY = (s) => h - padding - ((s - minSSE) / (maxSSE - minSSE)) * (h - padding * 2);
+
+    // Draw baseline
+    ctx.beginPath();
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.moveTo(padding, h - padding);
+    ctx.lineTo(w - padding, h - padding);
+    ctx.stroke();
+
+    // Draw Parabola (U-Shape)
+    ctx.beginPath();
+    ctx.strokeStyle = "#94a3b8"; // slate-400
+    ctx.lineWidth = 3;
+    ctx.lineJoin = "round";
+    sseData.forEach((pt, i) => {
+        if (i === 0) ctx.moveTo(mapX(pt.b), mapY(pt.s));
+        else ctx.lineTo(mapX(pt.b), mapY(pt.s));
+    });
+    ctx.stroke();
+
+    // Draw Optimal Point (Bottom of the U)
+    const optimalSSE = calculateSSE(beta0, beta1);
+    ctx.beginPath();
+    ctx.arc(mapX(beta1), mapY(optimalSSE), 5, 0, Math.PI * 2);
+    ctx.fillStyle = "#10b981"; // emerald-500
+    ctx.fill();
+
+    // Draw Current Slider Point
+    const currentSSE = calculateSSE(beta0, currentB1);
+    ctx.beginPath();
+    ctx.arc(mapX(currentB1), mapY(currentSSE), 7, 0, Math.PI * 2);
+
+    // Turn green if it hit the bottom
+    if (Math.abs(currentB1 - beta1) < 0.6) {
+        ctx.fillStyle = "#10b981";
+    } else {
+        ctx.fillStyle = "#ef4444"; // red-500
+    }
+
+    ctx.fill();
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
 
 // --- Step Definitions ---
 const steps = [
@@ -73,12 +155,10 @@ const steps = [
             <p class="text-slate-700 font-semibold mb-2">Try adjusting the line manually!</p>
             <p class="text-sm text-slate-600 mb-4">Use the sliders to tweak the Intercept ($\\beta_0$) and Slope ($\\beta_1$) to find what you think is the best fit before we calculate the optimal one.</p>
 
-            <!-- Dynamic Equation Display -->
             <div class="text-center text-lg font-mono text-indigo-700 bg-indigo-50 p-2 rounded mb-6 border border-indigo-100 shadow-inner">
                 ŷ = <span id="eq-b0" class="font-bold">0</span> + <span id="eq-b1" class="font-bold">15.0</span>x
             </div>
 
-            <!-- Interactive Sliders -->
             <div class="space-y-5">
                 <div>
                     <div class="flex justify-between items-center mb-1">
@@ -86,7 +166,6 @@ const steps = [
                         <span id="val-b0" class="text-sm font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded">0</span>
                     </div>
                     <input type="range" id="slider-b0" min="-150" max="150" step="1" value="0" class="w-full accent-indigo-600 cursor-pointer h-2">
-                    <p class="text-xs text-slate-500 mt-1">Starting point (sales when 0°C)</p>
                 </div>
                 <div>
                     <div class="flex justify-between items-center mb-1">
@@ -94,7 +173,6 @@ const steps = [
                         <span id="val-b1" class="text-sm font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded">15.0</span>
                     </div>
                     <input type="range" id="slider-b1" min="0" max="30" step="0.5" value="15" class="w-full accent-indigo-600 cursor-pointer h-2">
-                    <p class="text-xs text-slate-500 mt-1">Steepness (sales increase per 1°C)</p>
                 </div>
             </div>
         `,
@@ -106,7 +184,10 @@ const steps = [
             const eqB0 = document.getElementById('eq-b0');
             const eqB1 = document.getElementById('eq-b1');
 
-            // Set initial values
+            // Reset values for standard start on Step 2
+            customBeta0 = 0;
+            customBeta1 = 15;
+
             sliderB0.value = customBeta0;
             sliderB1.value = customBeta1;
             valB0.innerText = customBeta0;
@@ -114,19 +195,18 @@ const steps = [
             eqB0.innerText = customBeta0;
             eqB1.innerText = customBeta1.toFixed(1);
 
-            // Setup Event Listeners
             sliderB0.addEventListener('input', (e) => {
                 customBeta0 = parseFloat(e.target.value);
                 valB0.innerText = customBeta0;
                 eqB0.innerText = customBeta0;
-                renderCanvas(); // Redraw instantly
+                renderCanvas();
             });
 
             sliderB1.addEventListener('input', (e) => {
                 customBeta1 = parseFloat(e.target.value);
                 valB1.innerText = customBeta1.toFixed(1);
                 eqB1.innerText = customBeta1.toFixed(1);
-                renderCanvas(); // Redraw instantly
+                renderCanvas();
             });
         }
     },
@@ -147,17 +227,68 @@ const steps = [
     },
     {
         title: "4. Ordinary Least Squares (OLS)",
-        canvasTitle: "Squaring the Residuals",
+        canvasTitle: "Interactive: Minimizing the Squares",
         content: `
-            <h3 class="text-xl font-bold text-slate-800 mb-4">Squaring the Errors</h3>
-            <p class="mb-4 text-slate-600 leading-relaxed">If we simply add up the errors, the negative errors (points below the line) would cancel out the positive errors (points above). </p>
-            <p class="mb-4 text-slate-600 leading-relaxed">To fix this, and to heavily penalize large errors, we <strong>square</strong> each residual. This creates physical "squares" attached to our line.</p>
-            <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100 mb-4">
-                <p class="text-sm font-semibold text-indigo-800 mb-2">The OLS Goal:</p>
-                <p class="text-slate-700 text-sm">Find the line that minimizes the total sum of the areas of these red squares.</p>
+            <h3 class="text-xl font-bold text-slate-800 mb-3">Squaring the Errors</h3>
+            <p class="mb-3 text-sm text-slate-600 leading-relaxed">If we simply add up the errors, negative and positive ones cancel out. To fix this, we <strong>square</strong> each residual, creating physical "squares".</p>
+
+            <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100 mb-4">
+                <p class="text-sm font-semibold text-indigo-800 mb-1">The OLS Goal:</p>
+                <p class="text-slate-700 text-sm">Adjust the slope to minimize the <strong>total area</strong> of all red squares. The resulting chart produces a U-shape Cost Function.</p>
             </div>
-            <p class="text-slate-600 leading-relaxed">The line you see is the mathematical winner—it produces the smallest possible total square area. That's why it's called <strong>Ordinary Least Squares</strong>.</p>
-        `
+
+            <div class="mb-4 border-t border-slate-200 pt-4">
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-sm font-semibold text-slate-700">Drag Slope to find the bottom:</label>
+                    <span id="s4-val" class="text-sm font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded">29.0</span>
+                </div>
+                <input type="range" id="step4-slider" min="8" max="29" step="0.1" value="29" class="w-full accent-indigo-600 cursor-pointer h-2 mt-2">
+            </div>
+
+            <!-- U-Shape Canvas Info -->
+            <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col items-center">
+                <p class="text-xs font-bold text-slate-500 mb-1 uppercase tracking-wide">Sum of Squared Errors (Total Area)</p>
+                <p id="s4-sse" class="text-xl font-mono font-bold text-red-500 mb-2 transition-colors duration-300">0</p>
+
+                <canvas id="lossCanvas" width="300" height="120" class="w-full max-w-[300px] bg-slate-50 rounded border border-slate-100"></canvas>
+                <p class="text-[10px] text-slate-400 mt-2 text-center">The green dot marks the mathematical minimum line of best fit.</p>
+            </div>
+        `,
+        onRender: () => {
+            const slider = document.getElementById('step4-slider');
+            const valDisplay = document.getElementById('s4-val');
+            const sseDisplay = document.getElementById('s4-sse');
+            const lossCanvas = document.getElementById('lossCanvas');
+            const lossCtx = lossCanvas.getContext('2d');
+
+            // Force the intercept to be optimal, and make the slope intentionally bad
+            // so the user has to drag it down into the U-Shape valley.
+            customBeta0 = beta0;
+            customBeta1 = 29;
+            slider.value = customBeta1;
+
+            function updateStep4() {
+                customBeta1 = parseFloat(slider.value);
+                valDisplay.innerText = customBeta1.toFixed(1);
+
+                const currentSSE = calculateSSE(beta0, customBeta1);
+                sseDisplay.innerText = Math.round(currentSSE).toLocaleString();
+
+                // Check if they found the optimal bottom of the U-Shape
+                const isOptimal = Math.abs(customBeta1 - beta1) < 0.6;
+                if (isOptimal) {
+                    sseDisplay.classList.replace('text-red-500', 'text-emerald-500');
+                } else {
+                    sseDisplay.classList.replace('text-emerald-500', 'text-red-500');
+                }
+
+                drawLossCurve(lossCtx, lossCanvas.width, lossCanvas.height, customBeta1);
+                renderCanvas(); // Redraw main canvas
+            }
+
+            slider.addEventListener('input', updateStep4);
+            updateStep4(); // Initial render setup
+        }
     },
     {
         title: "5. Recap & The Formulas",
@@ -238,12 +369,12 @@ function drawAxes() {
     ctx.fillStyle = "#475569";
     ctx.font = "bold 16px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("Temperature (°C)", canvas.width / 2, canvas.height - 20);
+    ctx.fillText("Temperature (°C) →", canvas.width / 2, canvas.height - 20);
 
     ctx.save();
     ctx.translate(25, canvas.height / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.fillText("Ice Cream Sales ($)", 0, 0);
+    ctx.fillText("← Ice Cream Sales ($)", 0, 0);
     ctx.restore();
 
     // Ticks X
@@ -287,11 +418,18 @@ function drawPoints() {
 function drawLine() {
     ctx.beginPath();
 
-    // Differentiate Custom Interactive Line vs OLS Optimal Line
-    if (currentStep === 1) {
-        ctx.strokeStyle = "#4f46e5"; // indigo-600 for custom line
+    const isCustom = (currentStep === 1 || currentStep === 3);
+    let isOptimalMatch = false;
+
+    if (currentStep === 3) {
+        isOptimalMatch = Math.abs(customBeta1 - beta1) < 0.6;
+    }
+
+    // Turn the line green if it's the actual optimal or if they found it via slider
+    if (isCustom && !isOptimalMatch) {
+        ctx.strokeStyle = "#4f46e5"; // indigo-600
     } else {
-        ctx.strokeStyle = "#10b981"; // emerald-500 for optimal line
+        ctx.strokeStyle = "#10b981"; // emerald-500
     }
 
     ctx.lineWidth = 4;
@@ -300,8 +438,8 @@ function drawLine() {
     const endX = xMax;
 
     // Use corresponding math depending on step
-    const yStart = currentStep === 1 ? predictCustomY(startX) : predictY(startX);
-    const yEnd = currentStep === 1 ? predictCustomY(endX) : predictY(endX);
+    const yStart = predictActiveY(startX);
+    const yEnd = predictActiveY(endX);
 
     ctx.moveTo(mapX(startX), mapY(yStart));
     ctx.lineTo(mapX(endX), mapY(yEnd));
@@ -312,7 +450,7 @@ function drawResiduals() {
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
     rawData.forEach(p => {
-        const predY = predictY(p.x);
+        const predY = predictActiveY(p.x);
         ctx.beginPath();
         ctx.strokeStyle = "#ef4444";
         ctx.moveTo(mapX(p.x), mapY(p.y));
@@ -324,7 +462,7 @@ function drawResiduals() {
 
 function drawSquares() {
     rawData.forEach(p => {
-        const predY = predictY(p.x);
+        const predY = predictActiveY(p.x);
         const pixelX = mapX(p.x);
         const pixelY = mapY(p.y);
         const pixelPredY = mapY(predY);
